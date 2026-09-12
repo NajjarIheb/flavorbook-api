@@ -1,0 +1,292 @@
+openapi: 3.0.3
+info:
+  title: Recipe API
+  description: A REST API for recipes, categories, and reviews.
+  version: 1.0.0
+servers:
+  - url: /api
+security:
+  - apiKey: []
+tags:
+  - name: Recipes
+  - name: Categories
+  - name: Reviews
+  - name: Auth
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        "201":
+          description: Registered. Returns your API key.
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the current user
+      responses:
+        "200":
+          description: User info
+  /recipes:
+    get:
+      tags: [Recipes]
+      summary: List recipes with pagination, filtering and search
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+        - name: category
+          in: query
+          schema: { type: string }
+          description: Category slug to filter by
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Text to match against title, description and ingredients
+      responses:
+        "200":
+          description: Paginated recipe list
+    post:
+      tags: [Recipes]
+      summary: Create a recipe (auth required)
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecipeInput"
+      responses:
+        "201":
+          description: Recipe created
+        "400":
+          description: Validation failed
+        "401":
+          description: Missing or invalid API key
+  /recipes/{id}:
+    get:
+      tags: [Recipes]
+      summary: Get one recipe
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Recipe
+        "404":
+          description: Recipe not found
+    put:
+      tags: [Recipes]
+      summary: Replace a recipe (owner only)
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Recipe updated }
+        "403": { description: Not the owner }
+    patch:
+      tags: [Recipes]
+      summary: Partially update a recipe (owner only)
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Recipe updated }
+    delete:
+      tags: [Recipes]
+      summary: Delete a recipe (owner only)
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Recipe deleted }
+  /recipes/{id}/reviews:
+    get:
+      tags: [Reviews]
+      summary: List reviews of a recipe
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Paginated reviews
+    post:
+      tags: [Reviews]
+      summary: Review a recipe (auth required)
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        "201": { description: Review created }
+  /reviews/{id}:
+    put:
+      tags: [Reviews]
+      summary: Replace a review (author only)
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Review updated }
+    patch:
+      tags: [Reviews]
+      summary: Partially update a review (author only)
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Review updated }
+    delete:
+      tags: [Reviews]
+      summary: Delete a review (author only)
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Review deleted }
+  /categories:
+    get:
+      tags: [Categories]
+      summary: List categories (public)
+      responses:
+        "200": { description: Category list }
+    post:
+      tags: [Categories]
+      summary: Create a category (auth required)
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses:
+        "201": { description: Category created }
+  /categories/{id}:
+    put:
+      tags: [Categories]
+      summary: Rename a category (auth required)
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Category updated }
+    patch:
+      tags: [Categories]
+      summary: Rename a category (auth required)
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Category updated }
+    delete:
+      tags: [Categories]
+      summary: Delete a category (auth required)
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Category deleted }
+        "404": { description: Category not found }
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+  schemas:
+    RecipeInput:
+      type: object
+      required: [categoryId, title, description, preparedInMinutes, ingredients, steps]
+      properties:
+        categoryId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        preparedInMinutes:
+          type: integer
+        ingredients:
+          type: string
+        steps:
+          type: string
